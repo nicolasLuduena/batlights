@@ -15,48 +15,46 @@ pub struct BluetoothConnection {
 
 impl BluetoothConnection {
     pub async fn new(mac: String, data_uuid: String) -> Result<BluetoothConnection, String> {
-        let manager = Manager::new().await.expect("Error booting up bluetooth");
+        let manager = Manager::new().await.map_err(|e| format!("BT Error: {e}"))?;
         let adapters = manager
             .adapters()
             .await
-            .expect("Error loading bluetooth adapters");
+            .map_err(|e| format!("BT Error: {e}"))?;
         let adapter = adapters
             .into_iter()
             .next()
-            .expect("No bluetooth adapter found");
+            .ok_or("BT Error: No bluetooth adapter found")?;
 
-        println!("Scanning");
         let _ = adapter.start_scan(ScanFilter::default()).await;
         time::sleep(Duration::from_millis(200)).await;
 
         let peripheral = adapter
             .peripherals()
             .await
-            .expect("Could not load peripherals")
+            .map_err(|e| format!("BT Error: {e}"))?
             .into_iter()
             .find(|p| p.address().to_string() == mac)
-            .unwrap_or_else(|| panic!("Could not find peripheral with MAC address {mac}"));
+            .ok_or(format!("Could not find peripheral with MAC address {mac}"))?;
 
         peripheral
             .connect()
             .await
-            .expect("Could not connect to peripheral");
-        println!("Connected! Discovering services...");
+            .map_err(|e| format!("BT Error: {e}"))?;
         peripheral
             .discover_services()
             .await
-            .expect("Could not discover services");
+            .map_err(|e| format!("BT Error: {e}"))?;
 
         peripheral
             .discover_services()
             .await
-            .expect("Error discovering services");
+            .map_err(|e| format!("BT Error: {e}"))?;
 
         let cmd_char = peripheral
             .characteristics()
             .into_iter()
             .find(|x| x.uuid == Uuid::parse_str(data_uuid.as_str()).unwrap())
-            .expect("Port for writing color information not found");
+            .ok_or("Port for writing color information not found")?;
 
         Ok(BluetoothConnection {
             peripheral,
@@ -76,7 +74,7 @@ impl BluetoothConnection {
         self.peripheral
             .disconnect()
             .await
-            .expect("Error disconnecting");
+            .map_err(|e| format!("BT Error: {e}"))?;
         Ok(())
     }
 }
