@@ -27,7 +27,7 @@ impl BluetoothConnection {
 
         println!("Scanning");
         let _ = adapter.start_scan(ScanFilter::default()).await;
-        time::sleep(Duration::from_millis(100)).await;
+        time::sleep(Duration::from_millis(200)).await;
 
         let peripheral = adapter
             .peripherals()
