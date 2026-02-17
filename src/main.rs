@@ -1,5 +1,9 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
+use crate::controller::Controller;
+
+mod controller;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct BatLights {
@@ -7,7 +11,7 @@ pub struct BatLights {
     pub command: Commands,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, PartialEq, PartialOrd)]
 pub enum PowerState {
     On,
     Off,
@@ -21,12 +25,13 @@ pub enum Commands {
     Mic { sensitivity: u8 },
 }
 
-fn main() {
+fn main() -> Result<(), String> {
     let cmd = BatLights::parse();
+    let mut controller = crate::controller::MockController::new();
     match cmd.command {
-        Commands::Power { state } => println!("Power set to: {:?}", state),
-        Commands::Color { r, g, b } => println!("Setting colors to #{r:02X}{g:02X}{b:02X}"),
-        Commands::Pattern { index } => println!("Setting pattern {index}"),
-        Commands::Mic { sensitivity } => println!("Mic sensitivity {sensitivity}"),
+        Commands::Power { state } => controller.set_power(state == PowerState::On),
+        Commands::Color { r, g, b } => controller.set_color(controller::Color { r, g, b }),
+        Commands::Pattern { index } => controller.set_pattern(index),
+        Commands::Mic { sensitivity } => controller.set_mic(sensitivity),
     }
 }
