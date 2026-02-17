@@ -5,39 +5,34 @@ pub struct Color {
     pub b: u8,
 }
 
-pub trait Controller {
-    async fn set_power(&mut self, on: bool) -> Result<(), String>;
-    async fn set_color(&mut self, color: Color) -> Result<(), String>;
-    async fn set_pattern(&mut self, index: u8) -> Result<(), String>;
-    async fn set_mic(&mut self, sensitivity: u8) -> Result<(), String>;
-}
+pub struct Controller {}
 
-pub struct MockController {}
-
-impl MockController {
-    pub fn new() -> MockController {
-        MockController {}
-    }
-}
-
-impl Controller for MockController {
-    async fn set_power(&mut self, on: bool) -> Result<(), String> {
-        println!("Setting power: {on}");
-        Ok(())
+// Using information from https://github.com/user154lt/LEDDMX-00/blob/main/Dmx00Data.kt
+impl Controller {
+    pub fn power(on: bool) -> [u8; 9] {
+        [
+            0x7B,
+            0xFF,
+            0x04,
+            if on { 0x03 } else { 0x02 },
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xBF,
+        ]
     }
 
-    async fn set_color(&mut self, c: Color) -> Result<(), String> {
-        println!("Setting color to #{:02X}{:02X}{:02X}", c.r, c.g, c.b);
-        Ok(())
+    pub fn color(c: Color) -> [u8; 9] {
+        [0x7B, 0xFF, 0x07, c.r, c.g, c.b, 0x00, 0xFF, 0xBF]
     }
 
-    async fn set_pattern(&mut self, index: u8) -> Result<(), String> {
-        println!("Setting pattern to {index:02X}");
-        Ok(())
+    pub fn pattern(index: u8) -> [u8; 9] {
+        let index = index.clamp(0, 210);
+        [0x7B, 0xFF, 0x03, index, 0xFF, 0xFF, 0xFF, 0xFF, 0xBF]
     }
 
-    async fn set_mic(&mut self, sensitivity: u8) -> Result<(), String> {
-        println!("Setting mic sensitivity to {sensitivity:02X}");
-        Ok(())
+    pub fn mic(sensitivity: u8) -> [u8; 9] {
+        [0x7B, 0xFF, 0x0B, sensitivity, 0x00, 0xFF, 0xFF, 0xBF, 0x00]
     }
 }

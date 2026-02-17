@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::controller::Controller;
 
+mod bluetooth;
 mod controller;
 
 #[derive(Parser, Debug)]
@@ -25,14 +26,28 @@ pub enum Commands {
     Mic { sensitivity: u8 },
 }
 
+const MAC_ADDR: &str = "AC:C2:01:C9:38:5D";
+const CHARACTERISTIC_UUID: &str = "0000ffe1-0000-1000-8000-00805f9b34fb";
+
 #[tokio::main]
 async fn main() -> Result<(), String> {
     let cmd = BatLights::parse();
-    let mut controller = crate::controller::MockController::new();
-    match cmd.command {
-        Commands::Power { state } => controller.set_power(state == PowerState::On).await,
-        Commands::Color { r, g, b } => controller.set_color(controller::Color { r, g, b }).await,
-        Commands::Pattern { index } => controller.set_pattern(index).await,
-        Commands::Mic { sensitivity } => controller.set_mic(sensitivity).await,
-    }
+    let bluetooth = crate::bluetooth::BluetoothConnection::new(
+        MAC_ADDR.to_string(),
+        CHARACTERISTIC_UUID.to_string(),
+    )
+    .await?;
+
+    let payload = match cmd.command {
+        Commands::Power { state } => Controller::power(state == PowerState::On),
+        Commands::Color { r, g, b } => Controller::color(controller::Color { r, g, b }),
+        Commands::Pattern { index } => Controller::pattern(index),
+        Commands::Mic { sensitivity } => Controller::mic(sensitivity),
+    };
+
+    bluetooth.write(payload).await?;
+
+    bluetooth.bye().await?;
+
+    Ok(())
 }
