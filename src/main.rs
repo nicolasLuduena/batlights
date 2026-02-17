@@ -25,13 +25,14 @@ pub enum Commands {
     Mic { sensitivity: u8 },
 }
 
-fn main() -> Result<(), String> {
+#[tokio::main]
+async fn main() -> Result<(), String> {
     let cmd = BatLights::parse();
     let mut controller = crate::controller::MockController::new();
     match cmd.command {
-        Commands::Power { state } => controller.set_power(state == PowerState::On),
-        Commands::Color { r, g, b } => controller.set_color(controller::Color { r, g, b }),
-        Commands::Pattern { index } => controller.set_pattern(index),
-        Commands::Mic { sensitivity } => controller.set_mic(sensitivity),
+        Commands::Power { state } => controller.set_power(state == PowerState::On).await,
+        Commands::Color { r, g, b } => controller.set_color(controller::Color { r, g, b }).await,
+        Commands::Pattern { index } => controller.set_pattern(index).await,
+        Commands::Mic { sensitivity } => controller.set_mic(sensitivity).await,
     }
 }
