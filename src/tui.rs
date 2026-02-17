@@ -203,15 +203,12 @@ pub async fn run(tx: mpsc::Sender<[u8; 9]>) -> Result<(), Box<dyn Error>> {
     loop {
         terminal.draw(|f| ui(f, &app))?;
 
-        if event::poll(Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    if app.on_key(key).await {
+        if event::poll(Duration::from_millis(100))?
+            && let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press
+                    && app.on_key(key).await {
                         break;
                     }
-                }
-            }
-        }
     }
 
     // Restore terminal
